@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A777ance — Master Amounts Calculator</title>
+<style>
+  :root {
+    --bg: #eef1f2;
+    --surface: #ffffff;
+    --surface-2: #f5f6f7;
+    --ink: #17212b;
+    --muted: #5b6672;
+    --brass: #a9762f;
+    --brass-ink: #7d5620;
+    --teal: #2c4a5e;
+    --line: #d8dcdd;
+    --good: #3f7d5c;
+    --cost: #9c4a3d;
+    --carb: #74893a;
+    --focus: #2c4a5e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161a;
+      --surface: #1b2127;
+      --surface-2: #212832;
+      --ink: #e8eaec;
+      --muted: #97a1aa;
+      --brass: #c99a52;
+      --brass-ink: #e4bb82;
+      --teal: #6fa6b5;
+      --line: #2a3138;
+      --good: #5fae84;
+      --cost: #c97361;
+      --carb: #9dbd63;
+      --focus: #6fa6b5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161a; --surface: #1b2127; --surface-2: #212832; --ink: #e8eaec;
+    --muted: #97a1aa; --brass: #c99a52; --brass-ink: #e4bb82; --teal: #6fa6b5;
+    --line: #2a3138; --good: #5fae84; --cost: #c97361; --carb: #9dbd63; --focus: #6fa6b5;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f2; --surface: #ffffff; --surface-2: #f5f6f7; --ink: #17212b;
+    --muted: #5b6672; --brass: #a9762f; --brass-ink: #7d5620; --teal: #2c4a5e;
+    --line: #d8dcdd; --good: #3f7d5c; --cost: #9c4a3d; --carb: #74893a; --focus: #2c4a5e;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: 'Gill Sans MT', 'Gill Sans', Calibri, 'Trebuchet MS', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+
+  .eyebrow {
+    font-size: 0.78rem; letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--brass-ink); font-weight: 700; margin: 0 0 0.4rem;
+  }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.15rem); margin: 0 0 0.5rem; text-wrap: balance; letter-spacing: -0.01em; }
+  .dek { color: var(--muted); margin: 0 0 1.6rem; max-width: 64ch; font-size: 1.02rem; }
+
+  .hero {
+    display: flex; align-items: center; gap: 1.8rem; flex-wrap: wrap;
+    margin: 0.3rem 0 1.5rem; padding: 1.1rem 1.4rem;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  }
+  .hero-n { display: flex; align-items: baseline; gap: 0.5rem; flex: 0 0 auto; }
+  .hero-n input {
+    font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 800;
+    font-size: clamp(3.2rem, 8vw, 4.6rem); line-height: 1; color: var(--brass-ink);
+    background: none; border: none; width: 2.4ch; min-width: 2.4ch; max-width: 9ch;
+    padding: 0; text-align: right;
+  }
+  .hero-n-label { line-height: 1; }
+  .hero-n-letter { font-size: clamp(2rem, 5vw, 2.7rem); font-weight: 800; color: var(--ink); }
+  .hero-n-sub {
+    display: block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--muted); margin-top: 0.15rem; max-width: 12ch;
+  }
+  .hero-divider { align-self: stretch; width: 1px; background: var(--line); }
+  .macro { flex: 1 1 320px; min-width: 260px; }
+  .macro-eyebrow {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 0.5rem;
+  }
+  .macro-bar {
+    display: flex; height: 1.15rem; border-radius: 999px; overflow: hidden;
+    border: 1px solid var(--line); margin-bottom: 0.75rem; background: var(--surface-2);
+  }
+  .macro-seg { height: 100%; transition: width 0.15s ease; }
+  .macro-seg.protein { background: var(--teal); }
+  .macro-seg.carb { background: var(--carb); }
+  .macro-seg.fat { background: var(--brass); }
+  .macro-legend { display: flex; flex-direction: column; gap: 0.45rem; }
+  .macro-item { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.9rem; }
+  .macro-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: 0 0 auto; position: relative; top: -0.03rem; }
+  .macro-dot.protein { background: var(--teal); }
+  .macro-dot.carb { background: var(--carb); }
+  .macro-dot.fat { background: var(--brass); }
+  .macro-item input, .macro-readout {
+    font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05rem;
+    color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px;
+    width: 3.6rem; padding: 0.2rem 0.4rem; text-align: right;
+  }
+  .macro-readout { display: inline-block; cursor: default; }
+  .macro-item .macro-pct-unit { color: var(--muted); font-size: 0.86rem; }
+  .macro-item .macro-name { color: var(--ink); }
+  .macro-auto-tag {
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.08rem 0.4rem;
+  }
+  .macro-item .macro-name em { color: var(--muted); font-style: normal; }
+  .macro-warning {
+    display: none; align-items: center; gap: 0.4rem; margin: 0.7rem 0 0;
+    font-size: 0.8rem; font-weight: 700; color: var(--cost);
+  }
+  .macro-warning.show { display: flex; }
+  @media (max-width: 560px) {
+    .hero-divider { display: none; }
+    .hero { padding: 1rem; }
+  }
+
+  .flow { display: flex; align-items: center; gap: 0.6rem; margin: 1.5rem 0 2.2rem; flex-wrap: wrap; }
+  .flow-node { border: 1px solid var(--line); background: var(--surface); border-radius: 3px; padding: 0.5rem 0.85rem; font-size: 0.85rem; font-weight: 600; }
+  .flow-node.hq { border-color: var(--brass); color: var(--brass-ink); }
+  .flow-arrow { color: var(--muted); font-size: 0.78rem; letter-spacing: 0.02em; white-space: nowrap; }
+
+  .controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .tabs { display: flex; gap: 0.35rem; border-bottom: 1px solid var(--line); flex: 1 1 auto; }
+  .tab {
+    font-family: inherit; font-size: 0.92rem; font-weight: 600; color: var(--muted);
+    background: none; border: none; padding: 0.6rem 0.2rem; margin-right: 1.1rem;
+    cursor: pointer; position: relative; top: 1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom: 2px solid var(--brass); }
+  .tab:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  button.reset {
+    font-family: inherit; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 0.5rem 0.9rem; cursor: pointer; white-space: nowrap;
+  }
+  button.reset:hover { border-color: var(--brass); color: var(--brass-ink); }
+
+  .model-desc { color: var(--muted); font-size: 0.95rem; margin: 0.9rem 0 0.6rem; max-width: 64ch; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; padding: 0.22rem 0.6rem;
+    border-radius: 999px; border: 1px solid var(--teal); color: var(--teal); margin-bottom: 0.9rem;
+  }
+  .badge.exp { border-color: var(--brass); color: var(--brass-ink); }
+  .badge.inv { border-color: var(--cost); color: var(--cost); }
+
+  .rule-note {
+    background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--cost);
+    padding: 0.55rem 0.75rem; font-size: 0.82rem; border-radius: 4px; margin: 0 0 1.2rem; max-width: 64ch;
+  }
+  .rule-note strong { color: var(--ink); }
+
+  .ledger {
+    display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 1.6rem;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 1.4rem 1.5rem; overflow-x: auto;
+  }
+  .ledger-divider { background: var(--line); }
+  .col h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 0 0 0.9rem; }
+  .group { margin-bottom: 1.3rem; }
+  .group:last-child { margin-bottom: 0; }
+  .group-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--teal); font-weight: 700; margin: 0 0 0.5rem; }
+  .field { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--line); }
+  .field:last-child { border-bottom: none; }
+  .field label { font-size: 0.88rem; color: var(--ink); }
+  .field .sub { display: block; font-size: 0.76rem; color: var(--muted); font-weight: 400; }
+  .amount-input { display: flex; align-items: center; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .amount-input .cur { color: var(--muted); margin-right: 0.15rem; font-size: 0.88rem; }
+  .amount-input input {
+    font-family: inherit; font-variant-numeric: tabular-nums; font-size: 0.95rem; font-weight: 600;
+    color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px;
+    width: 4.4rem; padding: 0.28rem 0.4rem; text-align: right;
+  }
+  .amount-input.wide input { width: 3.4rem; }
+  .amount-input .unit { color: var(--muted); margin-left: 0.3rem; font-size: 0.78rem; white-space: nowrap; }
+
+  .computed-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--line); }
+  .computed-row:last-child { border-bottom: none; }
+  .computed-row .k { font-size: 0.88rem; }
+  .computed-row .v { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+  .v.pos { color: var(--good); }
+  .v.neg { color: var(--cost); }
+  .v.zero { color: var(--muted); }
+
+  .net-line { margin-top: 0.6rem; padding-top: 0.7rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; }
+  .net-line .k { font-weight: 700; font-size: 0.92rem; }
+  .net-line .v { font-size: 1.05rem; }
+
+  .none-note { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+  .footnote { margin-top: 1.1rem; font-size: 0.8rem; color: var(--muted); max-width: 68ch; }
+  .footnote strong { color: var(--ink); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.4rem 1.5rem; margin-top: 1.8rem; }
+  .card h3 { margin: 0 0 0.25rem; font-size: 1.05rem; }
+  .card .card-desc { color: var(--muted); font-size: 0.88rem; margin: 0 0 1.1rem; max-width: 64ch; }
+
+  .hw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+  .hw-shared { display: flex; gap: 1.6rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+  .hw-col h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--teal); margin: 0 0 0.6rem; }
+
+  .growth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; }
+  .growth-col h4 {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.6rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .growth-col.exp h4 { color: var(--brass-ink); }
+  .growth-col.lin h4 { color: var(--teal); }
+  .growth-col ul { margin: 0; padding-left: 1.1rem; font-size: 0.86rem; color: var(--ink); }
+  .growth-col li { margin-bottom: 0.35rem; }
+  .growth-thesis { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.92rem; }
+  .growth-thesis p { margin: 0 0 0.5rem; }
+  .growth-thesis p:last-child { margin-bottom: 0; }
+
+  @media (max-width: 620px) {
+    .ledger { grid-template-columns: 1fr; }
+    .ledger-divider { display: none; }
+    .col + .col { margin-top: 1.6rem; padding-top: 1.6rem; border-top: 1px solid var(--line); }
+    .hw-grid, .growth-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">A777ance — Guild Ledger</p>
+  <h1>Master Amounts Calculator</h1>
+  <div class="hero">
+    <div class="hero-n">
+      <input id="in-N" type="number" min="0" step="1" aria-label="Current N — nodes, operators, mesh points">
+      <span class="hero-n-label"><span class="hero-n-letter">N</span><span class="hero-n-sub">nodes · operators · mesh</span></span>
+    </div>
+    <div class="hero-divider" aria-hidden="true"></div>
+    <div class="macro">
+      <p class="macro-eyebrow">Strategic macro split</p>
+      <div class="macro-bar" id="macroBar" role="img" aria-label="Macro split across Self-Service, Remote, and Local">
+        <div class="macro-seg protein" id="macroSegProtein"></div>
+        <div class="macro-seg carb" id="macroSegCarb"></div>
+        <div class="macro-seg fat" id="macroSegFat"></div>
+      </div>
+      <div class="macro-legend">
+        <div class="macro-item"><span class="macro-dot protein"></span><input id="macro-self" type="number" min="0" step="1"><span class="macro-pct-unit">%</span><span class="macro-name">Self-Service — <em>protein, lean</em></span></div>
+        <div class="macro-item"><span class="macro-dot carb"></span><span class="macro-readout" id="macro-remote-readout"></span><span class="macro-pct-unit">%</span><span class="macro-name">Remote — <em>carbs, easy money, more work</em></span><span class="macro-auto-tag" title="Hardwired: floor of 10% up to N=10, then decays as 100 / N">auto — 100/N</span></div>
+        <div class="macro-item"><span class="macro-dot fat"></span><input id="macro-local" type="number" min="0" step="1"><span class="macro-pct-unit">%</span><span class="macro-name">Local — <em>fat: bulking &amp; insulating, critical long-term</em></span></div>
+      </div>
+      <p class="macro-warning" id="macroWarning" role="alert"></p>
+    </div>
+  </div>
+
+  <p class="dek">Who pays whom, per deployment model. Only <strong>Local</strong> puts an <strong>Operator</strong> in the money flow — <strong>Remote</strong> and <strong>Self-Service</strong> are billed and run by <strong>Alliance&nbsp;HQ</strong> (the founders, today) directly. Every figure below is editable.</p>
+
+  <div class="flow" id="flowDiagram" aria-hidden="true"></div>
+
+  <div class="controls">
+    <div class="tabs" role="tablist" aria-label="Deployment model">
+      <button class="tab" data-model="self" role="tab">Self-Service</button>
+      <button class="tab" data-model="remote" role="tab">Remote</button>
+      <button class="tab" data-model="local" role="tab">Local</button>
+    </div>
+    <button class="reset" id="resetBtn" type="button">Reset to defaults</button>
+  </div>
+
+  <span class="badge" id="modelBadge"></span>
+  <p class="model-desc" id="modelDesc"></p>
+  <p class="rule-note" id="ruleNote" style="display:none;"></p>
+
+  <div class="ledger">
+    <div class="col">
+      <h2>Inputs</h2>
+      <div class="group" id="group-customer">
+        <p class="group-label" id="customerGroupLabel">Customer pays</p>
+        <div class="field">
+          <label for="in-setup">Setup fee <span class="sub" id="setupSub">one-time</span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="in-setup" type="number" min="0" step="1"><span class="unit">once</span></div>
+        </div>
+        <div class="field" id="row-monthly">
+          <label for="in-monthly">Recurring fee <span class="sub" id="monthlySub"></span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="in-monthly" type="number" min="0" step="1"><span class="unit">/mo</span></div>
+        </div>
+        <div class="field" id="row-serviceFee">
+          <label for="in-serviceFee">Service fee <span class="sub">Customer → Operator, per household</span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="in-serviceFee" type="number" min="0" step="1"><span class="unit">/mo</span></div>
+        </div>
+      </div>
+      <div class="group" id="group-operator" style="display:none;">
+        <p class="group-label">Operator ↔ Alliance HQ</p>
+        <div class="field">
+          <label for="in-dues">Licensing fee <span class="sub">Operator → HQ, flat per operator</span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="in-dues" type="number" min="0" step="1"><span class="unit">/mo</span></div>
+        </div>
+        <div class="field">
+          <label for="in-households">Households served <span class="sub">by this operator (for the per-household view only)</span></label>
+          <div class="amount-input wide"><input id="in-households" type="number" min="1" step="1"><span class="unit">homes</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ledger-divider"></div>
+
+    <div class="col">
+      <h2>Who receives what</h2>
+      <div class="group">
+        <p class="group-label">Customer pays, total</p>
+        <div class="computed-row"><span class="k">One-time, at setup</span><span class="v neg" id="out-custOnce"></span></div>
+        <div class="computed-row"><span class="k">Recurring, monthly</span><span class="v neg" id="out-custMonthly"></span></div>
+      </div>
+      <div class="group" id="group-op-out" style="display:none;">
+        <p class="group-label">Operator (across all its households)</p>
+        <div class="computed-row"><span class="k">Receives from customers /mo</span><span class="v pos" id="out-opFromCust"></span></div>
+        <div class="computed-row"><span class="k">Pays to HQ /mo</span><span class="v neg" id="out-opToHQ"></span></div>
+        <div class="net-line"><span class="k">Operator net /mo</span><span class="v" id="out-opNet"></span></div>
+      </div>
+      <div class="group">
+        <p class="group-label">Alliance HQ</p>
+        <div class="computed-row"><span class="k" id="hqFromCustLabel">Receives from customer /mo</span><span class="v" id="out-hqFromCust"></span></div>
+        <div class="computed-row" id="row-hqFromOp" style="display:none;"><span class="k">Receives from operator /mo</span><span class="v pos" id="out-hqFromOp"></span></div>
+        <div class="computed-row" id="row-hqPerHousehold" style="display:none;"><span class="k">↳ per household served</span><span class="v" id="out-hqPerHousehold"></span></div>
+        <div class="net-line"><span class="k">HQ net /mo</span><span class="v" id="out-hqNet"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footnote" id="footnote"></p>
+
+  <div class="card">
+    <h3>Storefront — specialized hardware</h3>
+    <p class="card-desc">New or refurbished units, shipped to the household. They choose to rent or own; margin is realized after shipping cost. Applies alongside any deployment model above.</p>
+    <div class="hw-shared">
+      <div class="field" style="flex:1 1 200px;">
+        <label for="hw-cost">Hardware cost <span class="sub">to source, new/refurb</span></label>
+        <div class="amount-input"><span class="cur">$</span><input id="hw-cost" type="number" min="0" step="1"></div>
+      </div>
+      <div class="field" style="flex:1 1 200px;">
+        <label for="hw-ship">Shipping cost</label>
+        <div class="amount-input"><span class="cur">$</span><input id="hw-ship" type="number" min="0" step="1"></div>
+      </div>
+    </div>
+    <div class="hw-grid">
+      <div class="hw-col">
+        <h4>Own</h4>
+        <div class="field">
+          <label for="hw-own">Sale price <span class="sub">one-time, to customer</span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="hw-own" type="number" min="0" step="1"></div>
+        </div>
+        <div class="net-line"><span class="k">Profit per unit</span><span class="v" id="out-hwOwnProfit"></span></div>
+      </div>
+      <div class="hw-col">
+        <h4>Rent</h4>
+        <div class="field">
+          <label for="hw-rent">Rent price <span class="sub">per household</span></label>
+          <div class="amount-input"><span class="cur">$</span><input id="hw-rent" type="number" min="0" step="1"><span class="unit">/mo</span></div>
+        </div>
+        <div class="net-line"><span class="k">Payback period</span><span class="v" id="out-hwPayback"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>How this scales — N × $</h3>
+    <p class="card-desc">Exponential and linear growth, married together. Left is an Uber-style gig platform: a flat licensing royalty, fixed income for HQ. Right is the standard linear model: the aggressive, founder-labor-intensive early revenue that doubles as R&amp;D — and runs the storefront. The exponential is the insurance for the profit; the profit is the seed for the exponential.</p>
+    <div class="growth-grid">
+      <div class="growth-col exp">
+        <h4><span class="badge exp" style="margin:0;">Exponential — N</span></h4>
+        <ul>
+          <li>Flat licensing royalty — fixed income for HQ, not a per-job cut</li>
+          <li>Operators keep 100% of their own book's upside → self-motivated to grow it</li>
+          <li>Orphaned households: HQ inherits &amp; recoups if an operator stops servicing</li>
+          <li>Geo-redundancy and digital fingerprinting as the mesh densifies</li>
+          <li>"Uber"-style rotating tech-support duty; word-of-mouth compounding</li>
+        </ul>
+      </div>
+      <div class="growth-col lin">
+        <h4><span class="badge" style="margin:0;">Linear — $</span></h4>
+        <ul>
+          <li>Remote &amp; Self-Service: direct Customer → HQ billing — <strong>founder-run</strong>, not operator-run</li>
+          <li>The aggressive early-revenue engine — grows the business and the margin now</li>
+          <li>Founder-labor-intensive by design: the hands-on work today is the product's R&amp;D</li>
+          <li>Runs the hardware storefront (new/refurb, rent or own)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="growth-thesis">
+      <p>Enough <strong>N</strong> — enough nodes, operators, and mesh — and the guild can run its own <strong>sovereign internet</strong>, not just resell someone else's.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Bottom line — at N = <span id="blN"></span></h3>
+    <p class="card-desc">The macro split allocates N across the three models; each model's own numbers from the ledger above set its per-node rate. Multiplied separately, then summed.</p>
+    <div class="group">
+      <div class="computed-row"><span class="k">Self-Service — <span id="blSelfNodes"></span> households × <span id="blSelfPer"></span>/mo</span><span class="v pos" id="blSelfTotal"></span></div>
+      <div class="computed-row"><span class="k">Remote — <span id="blRemoteNodes"></span> households × <span id="blRemotePer"></span>/mo</span><span class="v pos" id="blRemoteTotal"></span></div>
+      <div class="computed-row"><span class="k">Local — <span id="blLocalNodes"></span> operators × <span id="blLocalPer"></span>/mo licensing</span><span class="v pos" id="blLocalTotal"></span></div>
+    </div>
+    <div class="net-line"><span class="k">Grand total, Alliance HQ /mo</span><span class="v" id="blGrandTotal"></span></div>
+    <div class="net-line"><span class="k">Annualized</span><span class="v" id="blGrandTotalYr"></span></div>
+  </div>
+
+  <div class="card">
+    <h3>Bottom line — one-time, at N = <span id="bl2N"></span></h3>
+    <p class="card-desc">Same split, for one-time setup revenue only: each model's setup fee to Alliance HQ (Local's setup goes to the Operator instead — $0 to HQ). Storefront revenue is broken out separately below, not counted here.</p>
+    <div class="group">
+      <div class="computed-row"><span class="k">Self-Service — <span id="bl2SelfNodes"></span> households × <span id="bl2SelfPer"></span>/unit</span><span class="v pos" id="bl2SelfTotal"></span></div>
+      <div class="computed-row"><span class="k">Remote — <span id="bl2RemoteNodes"></span> households × <span id="bl2RemotePer"></span>/unit</span><span class="v pos" id="bl2RemoteTotal"></span></div>
+      <div class="computed-row"><span class="k">Local — <span id="bl2LocalNodes"></span> operators × <span id="bl2LocalPer"></span>/unit (setup → Operator, not HQ)</span><span class="v pos" id="bl2LocalTotal"></span></div>
+    </div>
+    <div class="net-line"><span class="k">Grand total, Alliance HQ, one-time</span><span class="v" id="bl2GrandTotal"></span></div>
+  </div>
+
+  <div class="card">
+    <h3>Bottom line — storefront, at N = <span id="bl3N"></span></h3>
+    <p class="card-desc">The storefront's own split, broken out so it isn't double-counted above: Rent (recurring) and Own (one-time profit), each applied per model the same way as the other bottom lines.</p>
+    <div class="group">
+      <p class="group-label">Recurring — Rent</p>
+      <div class="computed-row"><span class="k">Self-Service — <span id="bl3SelfNodesR"></span> households × <span id="bl3SelfPerR"></span>/mo</span><span class="v pos" id="bl3SelfTotalR"></span></div>
+      <div class="computed-row"><span class="k">Remote — <span id="bl3RemoteNodesR"></span> households × <span id="bl3RemotePerR"></span>/mo</span><span class="v pos" id="bl3RemoteTotalR"></span></div>
+      <div class="computed-row"><span class="k">Local — <span id="bl3LocalNodesR"></span> operators × <span id="bl3LocalPerR"></span>/mo</span><span class="v pos" id="bl3LocalTotalR"></span></div>
+    </div>
+    <div class="net-line"><span class="k">Grand total, storefront rent /mo</span><span class="v" id="bl3GrandR"></span></div>
+    <div class="net-line"><span class="k">Annualized</span><span class="v" id="bl3GrandRYr"></span></div>
+
+    <div class="group" style="margin-top: 1.3rem;">
+      <p class="group-label">One-time — Own</p>
+      <div class="computed-row"><span class="k">Self-Service — <span id="bl3SelfNodesO"></span> households × <span id="bl3SelfPerO"></span>/unit</span><span class="v pos" id="bl3SelfTotalO"></span></div>
+      <div class="computed-row"><span class="k">Remote — <span id="bl3RemoteNodesO"></span> households × <span id="bl3RemotePerO"></span>/unit</span><span class="v pos" id="bl3RemoteTotalO"></span></div>
+      <div class="computed-row"><span class="k">Local — <span id="bl3LocalNodesO"></span> operators × <span id="bl3LocalPerO"></span>/unit</span><span class="v pos" id="bl3LocalTotalO"></span></div>
+    </div>
+    <div class="net-line"><span class="k">Grand total, storefront Own, one-time</span><span class="v" id="bl3GrandO"></span></div>
+  </div>
+
+</div>
+
+<script>
+  var MODELS = {
+    self: {
+      label: "Self-Service",
+      tier: "Tier B — Free / Self-Service",
+      type: "direct",
+      scale: "linear",
+      desc: "No operator, no truck roll, minimal HQ labor. The customer self-installs; Alliance HQ bills directly for the software and monitoring.",
+      defaults: { setup: 0, monthly: 20 },
+      footnote: "Customer → Alliance HQ, direct, per household. No operator is party to this model's money flow — HQ (the founders, today) carries it directly."
+    },
+    remote: {
+      label: "Remote",
+      tier: "Tier A — Premium Service",
+      type: "direct",
+      scale: "inverse",
+      desc: "Founder-assisted, no truck roll. Alliance HQ — the founders themselves, today — bills the customer directly and handles service remotely. Founder time is fixed, so this model's share of N shrinks as N grows.",
+      defaults: { setup: 175, monthly: 20 },
+      footnote: "Customer → Alliance HQ, direct, per household. No operator is party to this model's money flow — HQ (the founders, today) carries it directly. Its share of the macro split is inversely proportional to N (founders can't remote-service a guild-sized N)."
+    },
+    local: {
+      label: "Local",
+      tier: null,
+      type: "local",
+      scale: "exponential",
+      desc: "Full-service, in person. The operator installs and bills the customer directly, like a plumber through a trade guild — then pays Alliance HQ a flat licensing fee to stay in the guild.",
+      defaults: { setup: 175, serviceFee: 20, dues: 50, households: 5 },
+      footnote: "The licensing fee is flat per operator — it does not scale with the operator's household count. Alliance HQ never bills the customer directly in this model."
+    }
+  };
+  var ORDER = ["self", "remote", "local"];
+  var current = "self";
+  var state = {};
+  ORDER.forEach(function (k) { state[k] = Object.assign({}, MODELS[k].defaults); });
+
+  var HW_DEFAULTS = { cost: 150, ship: 12, own: 199, rent: 10 };
+  var hw = Object.assign({}, HW_DEFAULTS);
+
+  var N_DEFAULT = 5;
+  var MACRO_DEFAULTS = { self: 40, local: 50 };
+  var REMOTE_TARGET_PCT = 10;
+  var REMOTE_ANCHOR_N = 10;
+  var nVal = N_DEFAULT;
+  var macro = Object.assign({}, MACRO_DEFAULTS);
+  var nInput = document.getElementById("in-N");
+  var macroInputs = { self: document.getElementById("macro-self"), local: document.getElementById("macro-local") };
+  var remoteReadout = document.getElementById("macro-remote-readout");
+
+  function remotePct(N) {
+    if (N <= 0) return REMOTE_TARGET_PCT;
+    return REMOTE_TARGET_PCT * Math.min(1, REMOTE_ANCHOR_N / N);
+  }
+
+  function fmtPct(v) {
+    return v >= 1 ? (Math.round(v * 10) / 10).toLocaleString() : (Math.round(v * 100) / 100).toLocaleString();
+  }
+
+  function renderHero() {
+    nInput.value = nVal;
+    nInput.style.width = Math.max(2.4, String(nVal).length + 0.6) + "ch";
+    macroInputs.self.value = macro.self;
+    macroInputs.local.value = macro.local;
+    var remoteEffective = remotePct(nVal);
+    remoteReadout.textContent = fmtPct(remoteEffective);
+    var total = macro.self + remoteEffective + macro.local;
+    var pct = function (v) { return total > 0 ? (v / total * 100) : 0; };
+    document.getElementById("macroSegProtein").style.width = pct(macro.self) + "%";
+    document.getElementById("macroSegCarb").style.width = pct(remoteEffective) + "%";
+    document.getElementById("macroSegFat").style.width = pct(macro.local) + "%";
+
+    var warning = document.getElementById("macroWarning");
+    var checkTotal = macro.self + Math.floor(remoteEffective) + macro.local;
+    if (checkTotal !== 100) {
+      warning.textContent = "Macro split totals " + checkTotal + "%, not 100%";
+      warning.classList.add("show");
+    } else {
+      warning.textContent = "";
+      warning.classList.remove("show");
+    }
+
+    renderBottomLine();
+  }
+
+  function fmtNodes(n) {
+    return (Math.round(n * 10) / 10).toLocaleString();
+  }
+
+  function renderBottomLine() {
+    var selfNodes = nVal * (macro.self / 100);
+    var remoteNodes = nVal * (remotePct(nVal) / 100);
+    var localNodes = nVal * (macro.local / 100);
+    var selfPer = state.self.monthly;
+    var remotePer = state.remote.monthly;
+    var localPer = state.local.dues;
+    var selfTotal = selfNodes * selfPer;
+    var remoteTotal = remoteNodes * remotePer;
+    var localTotal = localNodes * localPer;
+    var grand = selfTotal + remoteTotal + localTotal;
+
+    document.getElementById("blN").textContent = fmtNodes(nVal);
+    document.getElementById("blSelfNodes").textContent = fmtNodes(selfNodes);
+    document.getElementById("blSelfPer").textContent = money(selfPer);
+    document.getElementById("blSelfTotal").textContent = money(selfTotal) + " /mo";
+    document.getElementById("blRemoteNodes").textContent = fmtNodes(remoteNodes);
+    document.getElementById("blRemotePer").textContent = money(remotePer);
+    document.getElementById("blRemoteTotal").textContent = money(remoteTotal) + " /mo";
+    document.getElementById("blLocalNodes").textContent = fmtNodes(localNodes);
+    document.getElementById("blLocalPer").textContent = money(localPer);
+    document.getElementById("blLocalTotal").textContent = money(localTotal) + " /mo";
+    document.getElementById("blGrandTotal").textContent = money(grand) + " /mo";
+    document.getElementById("blGrandTotalYr").textContent = money(grand * 12) + " /yr";
+
+    renderBottomLineOnce();
+  }
+
+  function renderBottomLineOnce() {
+    var selfNodes = nVal * (macro.self / 100);
+    var remoteNodes = nVal * (remotePct(nVal) / 100);
+    var localNodes = nVal * (macro.local / 100);
+    var selfPer = state.self.setup;
+    var remotePer = state.remote.setup;
+    var localPer = 0;
+    var selfTotal = selfNodes * selfPer;
+    var remoteTotal = remoteNodes * remotePer;
+    var localTotal = localNodes * localPer;
+    var grand = selfTotal + remoteTotal + localTotal;
+
+    document.getElementById("bl2N").textContent = fmtNodes(nVal);
+    document.getElementById("bl2SelfNodes").textContent = fmtNodes(selfNodes);
+    document.getElementById("bl2SelfPer").textContent = money(selfPer);
+    document.getElementById("bl2SelfTotal").textContent = money(selfTotal);
+    document.getElementById("bl2RemoteNodes").textContent = fmtNodes(remoteNodes);
+    document.getElementById("bl2RemotePer").textContent = money(remotePer);
+    document.getElementById("bl2RemoteTotal").textContent = money(remoteTotal);
+    document.getElementById("bl2LocalNodes").textContent = fmtNodes(localNodes);
+    document.getElementById("bl2LocalPer").textContent = money(localPer);
+    document.getElementById("bl2LocalTotal").textContent = money(localTotal);
+    document.getElementById("bl2GrandTotal").textContent = money(grand);
+
+    renderBottomLineStorefront();
+  }
+
+  function renderBottomLineStorefront() {
+    var selfNodes = nVal * (macro.self / 100);
+    var remoteNodes = nVal * (remotePct(nVal) / 100);
+    var localNodes = nVal * (macro.local / 100);
+    var ownProfit = hw.own - hw.cost - hw.ship;
+    var rentPrice = hw.rent;
+
+    var selfRecurring = selfNodes * rentPrice;
+    var remoteRecurring = remoteNodes * rentPrice;
+    var localRecurring = localNodes * rentPrice;
+    var recurringGrand = selfRecurring + remoteRecurring + localRecurring;
+
+    var selfOnce = selfNodes * ownProfit;
+    var remoteOnce = remoteNodes * ownProfit;
+    var localOnce = localNodes * ownProfit;
+    var onceGrand = selfOnce + remoteOnce + localOnce;
+
+    document.getElementById("bl3N").textContent = fmtNodes(nVal);
+
+    document.getElementById("bl3SelfNodesR").textContent = fmtNodes(selfNodes);
+    document.getElementById("bl3SelfPerR").textContent = money(rentPrice);
+    document.getElementById("bl3SelfTotalR").textContent = money(selfRecurring) + " /mo";
+    document.getElementById("bl3RemoteNodesR").textContent = fmtNodes(remoteNodes);
+    document.getElementById("bl3RemotePerR").textContent = money(rentPrice);
+    document.getElementById("bl3RemoteTotalR").textContent = money(remoteRecurring) + " /mo";
+    document.getElementById("bl3LocalNodesR").textContent = fmtNodes(localNodes);
+    document.getElementById("bl3LocalPerR").textContent = money(rentPrice);
+    document.getElementById("bl3LocalTotalR").textContent = money(localRecurring) + " /mo";
+    document.getElementById("bl3GrandR").textContent = money(recurringGrand) + " /mo";
+    document.getElementById("bl3GrandRYr").textContent = money(recurringGrand * 12) + " /yr";
+
+    document.getElementById("bl3SelfNodesO").textContent = fmtNodes(selfNodes);
+    document.getElementById("bl3SelfPerO").textContent = money(ownProfit);
+    document.getElementById("bl3SelfTotalO").textContent = money(selfOnce);
+    document.getElementById("bl3RemoteNodesO").textContent = fmtNodes(remoteNodes);
+    document.getElementById("bl3RemotePerO").textContent = money(ownProfit);
+    document.getElementById("bl3RemoteTotalO").textContent = money(remoteOnce);
+    document.getElementById("bl3LocalNodesO").textContent = fmtNodes(localNodes);
+    document.getElementById("bl3LocalPerO").textContent = money(ownProfit);
+    document.getElementById("bl3LocalTotalO").textContent = money(localOnce);
+    document.getElementById("bl3GrandO").textContent = money(onceGrand);
+  }
+
+  nInput.addEventListener("input", function () {
+    var n = parseFloat(nInput.value);
+    nVal = isNaN(n) ? 0 : n;
+    nInput.style.width = Math.max(2.4, nInput.value.length + 0.6) + "ch";
+    renderHero();
+  });
+  Object.keys(macroInputs).forEach(function (key) {
+    macroInputs[key].addEventListener("input", function () {
+      var n = parseFloat(macroInputs[key].value);
+      macro[key] = isNaN(n) ? 0 : n;
+      renderHero();
+    });
+  });
+
+  var fieldIds = { direct: ["setup", "monthly"], local: ["setup", "serviceFee", "dues", "households"] };
+  var allIds = ["setup", "monthly", "serviceFee", "dues", "households"];
+  var inputs = {};
+  allIds.forEach(function (id) { inputs[id] = document.getElementById("in-" + id); });
+  var hwInputs = { cost: document.getElementById("hw-cost"), ship: document.getElementById("hw-ship"), own: document.getElementById("hw-own"), rent: document.getElementById("hw-rent") };
+
+  function money(n) {
+    var v = Math.round(n * 100) / 100;
+    return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString();
+  }
+
+  function render() {
+    var m = MODELS[current];
+    var v = state[current];
+
+    document.querySelectorAll(".tab").forEach(function (t) {
+      t.classList.toggle("active", t.dataset.model === current);
+      t.setAttribute("aria-selected", t.dataset.model === current ? "true" : "false");
+    });
+    document.getElementById("modelDesc").textContent = m.desc;
+    document.getElementById("footnote").textContent = m.footnote;
+
+    var badge = document.getElementById("modelBadge");
+    if (m.scale === "exponential") {
+      badge.textContent = "Scales via N — exponential";
+      badge.className = "badge exp";
+    } else if (m.scale === "inverse") {
+      badge.textContent = "Scales via N — inversely proportional";
+      badge.className = "badge inv";
+    } else {
+      badge.textContent = "Scales via $ — linear";
+      badge.className = "badge";
+    }
+
+    var ruleNote = document.getElementById("ruleNote");
+    if (m.type === "local") {
+      ruleNote.style.display = "";
+      ruleNote.innerHTML = "<strong>Never:</strong> Customer never pays Alliance HQ directly in the Local model. All customer money goes to the Operator.";
+    } else {
+      ruleNote.style.display = "none";
+    }
+
+    var flow = document.getElementById("flowDiagram");
+    if (m.type === "local") {
+      flow.innerHTML =
+        '<div class="flow-node">Customer</div>' +
+        '<div class="flow-arrow">— pays, direct →</div>' +
+        '<div class="flow-node hq">Operator</div>' +
+        '<div class="flow-arrow">— flat licensing fee /mo →</div>' +
+        '<div class="flow-node">Alliance HQ</div>';
+    } else {
+      flow.innerHTML =
+        '<div class="flow-node">Customer</div>' +
+        '<div class="flow-arrow">— pays, direct →</div>' +
+        '<div class="flow-node hq">Alliance HQ</div>' +
+        '<div class="flow-arrow">(founder-run — no operator)</div>';
+    }
+
+    allIds.forEach(function (id) { if (v[id] !== undefined) inputs[id].value = v[id]; });
+
+    var isLocal = m.type === "local";
+    document.getElementById("row-monthly").style.display = isLocal ? "none" : "";
+    document.getElementById("row-serviceFee").style.display = isLocal ? "" : "none";
+    document.getElementById("group-operator").style.display = isLocal ? "" : "none";
+    document.getElementById("group-op-out").style.display = isLocal ? "" : "none";
+    document.getElementById("row-hqFromOp").style.display = isLocal ? "" : "none";
+    document.getElementById("row-hqPerHousehold").style.display = isLocal ? "" : "none";
+    document.getElementById("customerGroupLabel").textContent = isLocal ? "Customer pays (per household)" : "Customer pays";
+    document.getElementById("monthlySub").textContent = "Customer → Alliance HQ, per household";
+    document.getElementById("setupSub").textContent = isLocal ? "Customer → Operator, one-time" : "Customer → Alliance HQ, one-time";
+
+    var custOnce = v.setup;
+    document.getElementById("out-custOnce").textContent = money(custOnce);
+
+    if (isLocal) {
+      var custMonthly = v.serviceFee;
+      var opFromCust = v.serviceFee * v.households;
+      var opToHQ = v.dues;
+      var opNet = opFromCust - opToHQ;
+      var hqFromOp = v.dues;
+      var hqPerHousehold = v.households > 0 ? v.dues / v.households : 0;
+
+      document.getElementById("out-custMonthly").textContent = money(custMonthly) + " /mo";
+      document.getElementById("out-opFromCust").textContent = money(opFromCust) + " /mo";
+      document.getElementById("out-opToHQ").textContent = money(opToHQ) + " /mo";
+      document.getElementById("out-opNet").textContent = money(opNet) + " /mo";
+      document.getElementById("hqFromCustLabel").textContent = "Receives from customer, direct";
+      document.getElementById("out-hqFromCust").textContent = "never";
+      document.getElementById("out-hqFromCust").className = "v zero";
+      document.getElementById("out-hqFromOp").textContent = money(hqFromOp) + " /mo";
+      document.getElementById("out-hqPerHousehold").textContent = money(hqPerHousehold) + " /mo";
+      document.getElementById("out-hqNet").textContent = money(hqFromOp) + " /mo";
+    } else {
+      var custMonthlyD = v.monthly;
+      document.getElementById("out-custMonthly").textContent = money(custMonthlyD) + " /mo";
+      document.getElementById("hqFromCustLabel").textContent = "Receives from customer /mo";
+      document.getElementById("out-hqFromCust").textContent = money(custMonthlyD) + " /mo";
+      document.getElementById("out-hqFromCust").className = "v pos";
+      document.getElementById("out-hqNet").textContent = money(custMonthlyD) + " /mo";
+    }
+    renderBottomLine();
+  }
+
+  function renderHw() {
+    hwInputs.cost.value = hw.cost;
+    hwInputs.ship.value = hw.ship;
+    hwInputs.own.value = hw.own;
+    hwInputs.rent.value = hw.rent;
+    var ownProfit = hw.own - hw.cost - hw.ship;
+    document.getElementById("out-hwOwnProfit").textContent = money(ownProfit);
+    var basis = hw.cost + hw.ship;
+    var months = hw.rent > 0 ? Math.ceil(basis / hw.rent) : Infinity;
+    document.getElementById("out-hwPayback").textContent = isFinite(months) ? months + " mo" : "never";
+    renderBottomLineOnce();
+  }
+
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () { current = t.dataset.model; render(); });
+  });
+
+  allIds.forEach(function (id) {
+    inputs[id].addEventListener("input", function () {
+      var n = parseFloat(inputs[id].value);
+      state[current][id] = isNaN(n) ? 0 : n;
+      render();
+    });
+  });
+
+  Object.keys(hwInputs).forEach(function (key) {
+    hwInputs[key].addEventListener("input", function () {
+      var n = parseFloat(hwInputs[key].value);
+      hw[key] = isNaN(n) ? 0 : n;
+      renderHw();
+    });
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    ORDER.forEach(function (k) { state[k] = Object.assign({}, MODELS[k].defaults); });
+    hw = Object.assign({}, HW_DEFAULTS);
+    nVal = N_DEFAULT;
+    macro = Object.assign({}, MACRO_DEFAULTS);
+    render();
+    renderHw();
+    renderHero();
+  });
+
+  render();
+  renderHw();
+  renderHero();
+</script>
+</body>
+</html>
