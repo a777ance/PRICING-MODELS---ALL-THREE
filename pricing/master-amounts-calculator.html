@@ -105,21 +105,22 @@
   .macro-item input, .macro-readout {
     font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05rem;
     color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px;
-    width: 3.6rem; padding: 0.2rem 0.4rem; text-align: right;
+    width: 4.4rem; padding: 0.2rem 0.4rem; text-align: right;
   }
-  .macro-readout { display: inline-block; cursor: default; }
+  .macro-item input::-webkit-outer-spin-button,
+  .macro-item input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .macro-item input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  .macro-readout { display: inline-block; cursor: default; color: var(--muted); }
   .macro-item .macro-pct-unit { color: var(--muted); font-size: 0.86rem; }
   .macro-item .macro-name { color: var(--ink); }
-  .macro-auto-tag {
-    font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.08rem 0.4rem;
-  }
   .macro-item .macro-name em { color: var(--muted); font-style: normal; }
   .macro-warning {
-    display: none; align-items: center; gap: 0.4rem; margin: 0.7rem 0 0;
-    font-size: 0.8rem; font-weight: 700; color: var(--cost);
+    display: flex; align-items: center; gap: 0.4rem; margin: 0.7rem 0 0;
+    padding-top: 0.6rem; border-top: 1px dashed var(--line);
+    font-size: 0.8rem; font-weight: 700; color: var(--muted);
   }
-  .macro-warning.show { display: flex; }
+  .macro-warning .ggt-label { font-weight: 400; }
+  .macro-warning.off { color: var(--cost); }
 
   .ggt-strip {
     display: flex; gap: 1.6rem; flex-wrap: wrap; margin: 0 0 1.6rem;
@@ -265,10 +266,13 @@
       </div>
       <div class="macro-legend">
         <div class="macro-item"><span class="macro-dot protein"></span><input id="macro-self" type="number" min="0" step="1"><span class="macro-pct-unit">%</span><span class="macro-name">Self-Service — <em>protein, lean</em></span></div>
-        <div class="macro-item"><span class="macro-dot carb"></span><span class="macro-readout" id="macro-remote-readout"></span><span class="macro-pct-unit">%</span><span class="macro-name">Remote — <em>carbs, easy money, more work</em></span><span class="macro-auto-tag" title="Hardwired: floor of 10% up to N=10, then decays as 100 / N">auto — 100/N</span></div>
+        <div class="macro-item"><span class="macro-dot carb"></span><span class="macro-readout" id="macro-remote-readout" title="Derived: flat ÷ N × 100. Read-only — edit the flat node count instead."></span><span class="macro-pct-unit">%</span><span class="macro-name">Remote — <em>carbs, easy money, more work</em></span><input id="remote-flat" type="number" min="0" step="1"><span class="macro-pct-unit">nodes, flat</span></div>
         <div class="macro-item"><span class="macro-dot fat"></span><input id="macro-local" type="number" min="0" step="1"><span class="macro-pct-unit">%</span><span class="macro-name">Local — <em>fat: bulking &amp; insulating, critical long-term</em></span></div>
       </div>
-      <p class="macro-warning" id="macroWarning" role="alert"></p>
+      <p class="macro-warning" id="macroWarning" role="status">
+        <span class="ggt-label">Percent total</span>
+        <span id="macroWarningValue"></span>
+      </p>
     </div>
   </div>
 
@@ -465,6 +469,46 @@
     <div class="net-line"><span class="k">Grand total, storefront Own, one-time</span><span class="v" id="bl3GrandO"></span></div>
   </div>
 
+  <div class="card">
+    <h3>Bottom line — COGS, at N = <span id="bl4N"></span></h3>
+    <p class="card-desc">Everything above this card has been gross revenue. This is the direct hardware cost (cost + shipping per unit) behind the storefront numbers — the first real cost line.</p>
+    <div class="group">
+      <div class="computed-row"><span class="k">Self-Service — <span id="bl4SelfNodes"></span> households × <span id="bl4SelfPer"></span>/unit</span><span class="v neg" id="bl4SelfTotal"></span></div>
+      <div class="computed-row"><span class="k">Remote — <span id="bl4RemoteNodes"></span> households × <span id="bl4RemotePer"></span>/unit</span><span class="v neg" id="bl4RemoteTotal"></span></div>
+      <div class="computed-row"><span class="k">Local — <span id="bl4LocalNodes"></span> operators × <span id="bl4LocalPer"></span>/unit</span><span class="v neg" id="bl4LocalTotal"></span></div>
+    </div>
+    <div class="net-line"><span class="k">Grand total COGS, one-time</span><span class="v neg" id="bl4GrandTotal"></span></div>
+  </div>
+
+  <div class="card">
+    <h3>Founder hours — at N = <span id="fhN"></span></h3>
+    <p class="card-desc">Time, not money. Local is onboarding — founder ↔ operator, once per operator. Remote is founder labor, fully and ongoing. Self-Service is founder-run production and shipping — less than Remote, and once per unit.</p>
+    <div class="group">
+      <p class="group-label">Recurring — hrs/mo</p>
+      <div class="field">
+        <label for="fh-remote">Remote service <span class="sub">per household, ongoing</span></label>
+        <div class="amount-input"><input id="fh-remote" type="number" min="0" step="0.1"><span class="unit">hrs/mo</span></div>
+      </div>
+    </div>
+    <div class="computed-row" style="margin-top: 0.9rem;"><span class="k">Remote — <span id="fhRemoteNodes"></span> households × <span id="fhRemotePer"></span> hrs/mo</span><span class="v pos" id="fhRemoteTotal"></span></div>
+    <div class="net-line"><span class="k">Grand total, recurring hrs/mo</span><span class="v" id="fhGrandR"></span></div>
+
+    <div class="group" style="margin-top: 1.3rem;">
+      <p class="group-label">One-time — hrs</p>
+      <div class="field">
+        <label for="fh-local">Operator onboarding <span class="sub">per operator, once</span></label>
+        <div class="amount-input"><input id="fh-local" type="number" min="0" step="0.5"><span class="unit">hrs</span></div>
+      </div>
+      <div class="field">
+        <label for="fh-self">Production &amp; shipping <span class="sub">per unit, once</span></label>
+        <div class="amount-input"><input id="fh-self" type="number" min="0" step="0.1"><span class="unit">hrs</span></div>
+      </div>
+    </div>
+    <div class="computed-row" style="margin-top: 0.9rem;"><span class="k">Local — <span id="fhLocalNodes"></span> operators × <span id="fhLocalPer"></span> hrs</span><span class="v pos" id="fhLocalTotal"></span></div>
+    <div class="computed-row"><span class="k">Self-Service — <span id="fhSelfNodes"></span> households × <span id="fhSelfPer"></span> hrs</span><span class="v pos" id="fhSelfTotal"></span></div>
+    <div class="net-line"><span class="k">Grand total, one-time hrs</span><span class="v" id="fhGrandO"></span></div>
+  </div>
+
 </div>
 
 <script>
@@ -503,21 +547,45 @@
   ORDER.forEach(function (k) { state[k] = Object.assign({}, MODELS[k].defaults); });
 
   var HW_DEFAULTS = { cost: 150, ship: 12, own: 199, rent: 10 };
+  var FH_DEFAULTS = { remote: 1.5, local: 4, self: 0.5 };
   var hw = Object.assign({}, HW_DEFAULTS);
+  var fh = Object.assign({}, FH_DEFAULTS);
 
-  var N_DEFAULT = 5;
+  var N_DEFAULT = 10;
   var MACRO_DEFAULTS = { self: 40, local: 50 };
-  var REMOTE_TARGET_PCT = 10;
-  var REMOTE_ANCHOR_N = 10;
+  var REMOTE_FLAT_DEFAULT = 1;
   var nVal = N_DEFAULT;
   var macro = Object.assign({}, MACRO_DEFAULTS);
+  var remoteFlat = REMOTE_FLAT_DEFAULT;
   var nInput = document.getElementById("in-N");
   var macroInputs = { self: document.getElementById("macro-self"), local: document.getElementById("macro-local") };
   var remoteReadout = document.getElementById("macro-remote-readout");
+  var remoteFlatInput = document.getElementById("remote-flat");
 
+  // Remote is a flat headcount (founder capacity), not a ratio -- you type
+  // the node count directly and the percentage is derived (read-only).
   function remotePct(N) {
-    if (N <= 0) return REMOTE_TARGET_PCT;
-    return REMOTE_TARGET_PCT * Math.min(1, REMOTE_ANCHOR_N / N);
+    if (N <= 0) return 0;
+    return Math.min(100, (remoteFlat / N) * 100);
+  }
+
+  // Self and Local are weights (ratio), not fixed percentages. As Remote's
+  // share shrinks with N, the remainder is redistributed pro-rata between
+  // Self and Local so the three always sum to 100 -- no manual retweaking
+  // needed as N slides.
+  function effectiveSplit(N) {
+    var remoteEff = remotePct(N);
+    var remaining = Math.max(0, 100 - remoteEff);
+    var weightSum = macro.self + macro.local;
+    var selfEff, localEff;
+    if (weightSum > 0) {
+      selfEff = remaining * (macro.self / weightSum);
+      localEff = remaining * (macro.local / weightSum);
+    } else {
+      selfEff = remaining / 2;
+      localEff = remaining / 2;
+    }
+    return { remoteEff: remoteEff, selfEff: selfEff, localEff: localEff };
   }
 
   function fmtPct(v) {
@@ -527,25 +595,23 @@
   function renderHero() {
     nInput.value = nVal;
     nInput.style.width = Math.max(2.4, String(nVal).length + 0.6) + "ch";
-    macroInputs.self.value = macro.self;
-    macroInputs.local.value = macro.local;
-    var remoteEffective = remotePct(nVal);
-    remoteReadout.textContent = fmtPct(remoteEffective);
-    var total = macro.self + remoteEffective + macro.local;
+    remoteFlatInput.value = remoteFlat;
+    var split = effectiveSplit(nVal);
+    macroInputs.self.value = fmtPct(split.selfEff);
+    macroInputs.local.value = fmtPct(split.localEff);
+    remoteReadout.textContent = fmtPct(split.remoteEff);
+    var total = split.selfEff + split.remoteEff + split.localEff;
     var pct = function (v) { return total > 0 ? (v / total * 100) : 0; };
-    document.getElementById("macroSegProtein").style.width = pct(macro.self) + "%";
-    document.getElementById("macroSegCarb").style.width = pct(remoteEffective) + "%";
-    document.getElementById("macroSegFat").style.width = pct(macro.local) + "%";
+    document.getElementById("macroSegProtein").style.width = pct(split.selfEff) + "%";
+    document.getElementById("macroSegCarb").style.width = pct(split.remoteEff) + "%";
+    document.getElementById("macroSegFat").style.width = pct(split.localEff) + "%";
 
     var warning = document.getElementById("macroWarning");
-    var checkTotal = macro.self + Math.floor(remoteEffective) + macro.local;
-    if (checkTotal !== 100) {
-      warning.textContent = "Macro split totals " + checkTotal + "%, not 100%";
-      warning.classList.add("show");
-    } else {
-      warning.textContent = "";
-      warning.classList.remove("show");
-    }
+    var warningValue = document.getElementById("macroWarningValue");
+    var totalRounded = Math.round(total * 10) / 10;
+    var offTarget = Math.abs(total - 100) > 0.01;
+    warningValue.textContent = totalRounded + "%" + (offTarget ? " — not 100%" : "");
+    warning.classList.toggle("off", offTarget);
 
     renderBottomLine();
   }
@@ -555,9 +621,10 @@
   }
 
   function renderBottomLine() {
-    var selfNodes = nVal * (macro.self / 100);
-    var remoteNodes = nVal * (remotePct(nVal) / 100);
-    var localNodes = nVal * (macro.local / 100);
+    var split = effectiveSplit(nVal);
+    var selfNodes = nVal * (split.selfEff / 100);
+    var remoteNodes = nVal * (split.remoteEff / 100);
+    var localNodes = nVal * (split.localEff / 100);
     var selfPer = state.self.monthly;
     var remotePer = state.remote.monthly;
     var localPer = state.local.dues;
@@ -583,9 +650,10 @@
   }
 
   function renderBottomLineOnce() {
-    var selfNodes = nVal * (macro.self / 100);
-    var remoteNodes = nVal * (remotePct(nVal) / 100);
-    var localNodes = nVal * (macro.local / 100);
+    var split = effectiveSplit(nVal);
+    var selfNodes = nVal * (split.selfEff / 100);
+    var remoteNodes = nVal * (split.remoteEff / 100);
+    var localNodes = nVal * (split.localEff / 100);
     var selfPer = state.self.setup;
     var remotePer = state.remote.setup;
     var localPer = 0;
@@ -610,9 +678,10 @@
   }
 
   function renderBottomLineStorefront() {
-    var selfNodes = nVal * (macro.self / 100);
-    var remoteNodes = nVal * (remotePct(nVal) / 100);
-    var localNodes = nVal * (macro.local / 100);
+    var split = effectiveSplit(nVal);
+    var selfNodes = nVal * (split.selfEff / 100);
+    var remoteNodes = nVal * (split.remoteEff / 100);
+    var localNodes = nVal * (split.localEff / 100);
     var ownProfit = hw.own - hw.cost - hw.ship;
     var rentPrice = hw.rent;
 
@@ -659,12 +728,79 @@
     document.getElementById("ggtRecurring").textContent = money(ggtRecurring) + " /mo";
     document.getElementById("ggtRecurringYr").textContent = "(" + money(ggtRecurring * 12) + " /yr)";
     document.getElementById("ggtOnce").textContent = money(ggtOnce);
+
+    renderBottomLineCOGS();
+  }
+
+  function renderBottomLineCOGS() {
+    var split = effectiveSplit(nVal);
+    var selfNodes = nVal * (split.selfEff / 100);
+    var remoteNodes = nVal * (split.remoteEff / 100);
+    var localNodes = nVal * (split.localEff / 100);
+    var cogsPerUnit = hw.cost + hw.ship;
+
+    var selfTotal = selfNodes * cogsPerUnit;
+    var remoteTotal = remoteNodes * cogsPerUnit;
+    var localTotal = localNodes * cogsPerUnit;
+    var grand = selfTotal + remoteTotal + localTotal;
+
+    document.getElementById("bl4N").textContent = fmtNodes(nVal);
+    document.getElementById("bl4SelfNodes").textContent = fmtNodes(selfNodes);
+    document.getElementById("bl4SelfPer").textContent = money(cogsPerUnit);
+    document.getElementById("bl4SelfTotal").textContent = money(selfTotal);
+    document.getElementById("bl4RemoteNodes").textContent = fmtNodes(remoteNodes);
+    document.getElementById("bl4RemotePer").textContent = money(cogsPerUnit);
+    document.getElementById("bl4RemoteTotal").textContent = money(remoteTotal);
+    document.getElementById("bl4LocalNodes").textContent = fmtNodes(localNodes);
+    document.getElementById("bl4LocalPer").textContent = money(cogsPerUnit);
+    document.getElementById("bl4LocalTotal").textContent = money(localTotal);
+    document.getElementById("bl4GrandTotal").textContent = money(grand);
+
+    renderFounderHours();
+  }
+
+  function hrs(n) {
+    return (Math.round(n * 10) / 10).toLocaleString();
+  }
+
+  function renderFounderHours() {
+    fhInputs.remote.value = fh.remote;
+    fhInputs.local.value = fh.local;
+    fhInputs.self.value = fh.self;
+    var split = effectiveSplit(nVal);
+    var selfNodes = nVal * (split.selfEff / 100);
+    var remoteNodes = nVal * (split.remoteEff / 100);
+    var localNodes = nVal * (split.localEff / 100);
+
+    var remoteTotal = remoteNodes * fh.remote;
+    var localTotal = localNodes * fh.local;
+    var selfTotal = selfNodes * fh.self;
+    var onceGrand = localTotal + selfTotal;
+
+    document.getElementById("fhN").textContent = fmtNodes(nVal);
+    document.getElementById("fhRemoteNodes").textContent = fmtNodes(remoteNodes);
+    document.getElementById("fhRemotePer").textContent = hrs(fh.remote);
+    document.getElementById("fhRemoteTotal").textContent = hrs(remoteTotal) + " hrs/mo";
+    document.getElementById("fhGrandR").textContent = hrs(remoteTotal) + " hrs/mo";
+
+    document.getElementById("fhLocalNodes").textContent = fmtNodes(localNodes);
+    document.getElementById("fhLocalPer").textContent = hrs(fh.local);
+    document.getElementById("fhLocalTotal").textContent = hrs(localTotal) + " hrs";
+    document.getElementById("fhSelfNodes").textContent = fmtNodes(selfNodes);
+    document.getElementById("fhSelfPer").textContent = hrs(fh.self);
+    document.getElementById("fhSelfTotal").textContent = hrs(selfTotal) + " hrs";
+    document.getElementById("fhGrandO").textContent = hrs(onceGrand) + " hrs";
   }
 
   nInput.addEventListener("input", function () {
     var n = parseFloat(nInput.value);
     nVal = isNaN(n) ? 0 : n;
     nInput.style.width = Math.max(2.4, nInput.value.length + 0.6) + "ch";
+    renderHero();
+  });
+  remoteFlatInput.addEventListener("input", function () {
+    var n = parseFloat(remoteFlatInput.value);
+    remoteFlat = isNaN(n) ? 0 : n;
     renderHero();
   });
   Object.keys(macroInputs).forEach(function (key) {
@@ -680,6 +816,7 @@
   var inputs = {};
   allIds.forEach(function (id) { inputs[id] = document.getElementById("in-" + id); });
   var hwInputs = { cost: document.getElementById("hw-cost"), ship: document.getElementById("hw-ship"), own: document.getElementById("hw-own"), rent: document.getElementById("hw-rent") };
+  var fhInputs = { remote: document.getElementById("fh-remote"), local: document.getElementById("fh-local"), self: document.getElementById("fh-self") };
 
   function money(n) {
     var v = Math.round(n * 100) / 100;
@@ -810,12 +947,21 @@
       renderHw();
     });
   });
+  Object.keys(fhInputs).forEach(function (key) {
+    fhInputs[key].addEventListener("input", function () {
+      var n = parseFloat(fhInputs[key].value);
+      fh[key] = isNaN(n) ? 0 : n;
+      renderFounderHours();
+    });
+  });
 
   document.getElementById("resetBtn").addEventListener("click", function () {
     ORDER.forEach(function (k) { state[k] = Object.assign({}, MODELS[k].defaults); });
     hw = Object.assign({}, HW_DEFAULTS);
+    fh = Object.assign({}, FH_DEFAULTS);
     nVal = N_DEFAULT;
     macro = Object.assign({}, MACRO_DEFAULTS);
+    remoteFlat = REMOTE_FLAT_DEFAULT;
     render();
     renderHw();
     renderHero();
