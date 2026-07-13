@@ -120,6 +120,17 @@
     font-size: 0.8rem; font-weight: 700; color: var(--cost);
   }
   .macro-warning.show { display: flex; }
+
+  .ggt-strip {
+    display: flex; gap: 1.6rem; flex-wrap: wrap; margin: 0 0 1.6rem;
+    padding: 0.55rem 0.9rem; background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 6px; font-size: 0.8rem;
+  }
+  .ggt-item { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+  .ggt-label { color: var(--muted); }
+  .ggt-value { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); font-size: 0.92rem; }
+  .ggt-sub { color: var(--muted); font-size: 0.72rem; }
+
   @media (max-width: 560px) {
     .hero-divider { display: none; }
     .hero { padding: 1rem; }
@@ -258,6 +269,18 @@
         <div class="macro-item"><span class="macro-dot fat"></span><input id="macro-local" type="number" min="0" step="1"><span class="macro-pct-unit">%</span><span class="macro-name">Local — <em>fat: bulking &amp; insulating, critical long-term</em></span></div>
       </div>
       <p class="macro-warning" id="macroWarning" role="alert"></p>
+    </div>
+  </div>
+
+  <div class="ggt-strip">
+    <div class="ggt-item">
+      <span class="ggt-label">Grand grand total, recurring → Alliance HQ</span>
+      <span class="ggt-value" id="ggtRecurring"></span>
+      <span class="ggt-sub" id="ggtRecurringYr"></span>
+    </div>
+    <div class="ggt-item">
+      <span class="ggt-label">Grand grand total, one-time → Alliance HQ</span>
+      <span class="ggt-value" id="ggtOnce"></span>
     </div>
   </div>
 
@@ -627,6 +650,15 @@
     document.getElementById("bl3LocalPerO").textContent = money(ownProfit);
     document.getElementById("bl3LocalTotalO").textContent = money(localOnce);
     document.getElementById("bl3GrandO").textContent = money(onceGrand);
+
+    var hqRecurring = selfNodes * state.self.monthly + remoteNodes * state.remote.monthly + localNodes * state.local.dues;
+    var hqOnce = selfNodes * state.self.setup + remoteNodes * state.remote.setup;
+    var ggtRecurring = hqRecurring + recurringGrand;
+    var ggtOnce = hqOnce + onceGrand;
+
+    document.getElementById("ggtRecurring").textContent = money(ggtRecurring) + " /mo";
+    document.getElementById("ggtRecurringYr").textContent = "(" + money(ggtRecurring * 12) + " /yr)";
+    document.getElementById("ggtOnce").textContent = money(ggtOnce);
   }
 
   nInput.addEventListener("input", function () {
