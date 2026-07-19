@@ -482,7 +482,11 @@
 
   <div class="card">
     <h3>Founder hours — at N = <span id="fhN"></span></h3>
-    <p class="card-desc">Time, not money. Local is onboarding — founder ↔ operator, once per operator. Remote is founder labor, fully and ongoing. Self-Service is founder-run production and shipping — less than Remote, and once per unit.</p>
+    <p class="card-desc">Time, not money — until the hourly rate below converts it. Local is onboarding — founder ↔ operator, once per operator. Remote is founder labor, fully and ongoing. Self-Service is founder-run production and shipping — less than Remote, and once per unit.</p>
+    <div class="field" style="margin-bottom: 1.1rem;">
+      <label for="fh-rate">Founder hourly rate <span class="sub">implied cost, both sections below</span></label>
+      <div class="amount-input"><span class="cur">$</span><input id="fh-rate" type="number" min="0" step="1"><span class="unit">/hr</span></div>
+    </div>
     <div class="group">
       <p class="group-label">Recurring — hrs/mo</p>
       <div class="field">
@@ -492,6 +496,7 @@
     </div>
     <div class="computed-row" style="margin-top: 0.9rem;"><span class="k">Remote — <span id="fhRemoteNodes"></span> households × <span id="fhRemotePer"></span> hrs/mo</span><span class="v pos" id="fhRemoteTotal"></span></div>
     <div class="net-line"><span class="k">Grand total, recurring hrs/mo</span><span class="v" id="fhGrandR"></span></div>
+    <div class="computed-row"><span class="k">↳ at the hourly rate</span><span class="v neg" id="fhGrandRCost"></span></div>
 
     <div class="group" style="margin-top: 1.3rem;">
       <p class="group-label">One-time — hrs</p>
@@ -507,6 +512,7 @@
     <div class="computed-row" style="margin-top: 0.9rem;"><span class="k">Local — <span id="fhLocalNodes"></span> operators × <span id="fhLocalPer"></span> hrs</span><span class="v pos" id="fhLocalTotal"></span></div>
     <div class="computed-row"><span class="k">Self-Service — <span id="fhSelfNodes"></span> households × <span id="fhSelfPer"></span> hrs</span><span class="v pos" id="fhSelfTotal"></span></div>
     <div class="net-line"><span class="k">Grand total, one-time hrs</span><span class="v" id="fhGrandO"></span></div>
+    <div class="computed-row"><span class="k">↳ at the hourly rate</span><span class="v neg" id="fhGrandOCost"></span></div>
   </div>
 
 </div>
@@ -547,7 +553,7 @@
   ORDER.forEach(function (k) { state[k] = Object.assign({}, MODELS[k].defaults); });
 
   var HW_DEFAULTS = { cost: 150, ship: 12, own: 199, rent: 10 };
-  var FH_DEFAULTS = { remote: 1.5, local: 4, self: 0.5 };
+  var FH_DEFAULTS = { remote: 1.5, local: 4, self: 0.5, rate: 50 };
   var hw = Object.assign({}, HW_DEFAULTS);
   var fh = Object.assign({}, FH_DEFAULTS);
 
@@ -767,6 +773,7 @@
     fhInputs.remote.value = fh.remote;
     fhInputs.local.value = fh.local;
     fhInputs.self.value = fh.self;
+    fhInputs.rate.value = fh.rate;
     var split = effectiveSplit(nVal);
     var selfNodes = nVal * (split.selfEff / 100);
     var remoteNodes = nVal * (split.remoteEff / 100);
@@ -790,6 +797,9 @@
     document.getElementById("fhSelfPer").textContent = hrs(fh.self);
     document.getElementById("fhSelfTotal").textContent = hrs(selfTotal) + " hrs";
     document.getElementById("fhGrandO").textContent = hrs(onceGrand) + " hrs";
+
+    document.getElementById("fhGrandRCost").textContent = money(remoteTotal * fh.rate) + " /mo";
+    document.getElementById("fhGrandOCost").textContent = money(onceGrand * fh.rate);
   }
 
   nInput.addEventListener("input", function () {
@@ -816,7 +826,7 @@
   var inputs = {};
   allIds.forEach(function (id) { inputs[id] = document.getElementById("in-" + id); });
   var hwInputs = { cost: document.getElementById("hw-cost"), ship: document.getElementById("hw-ship"), own: document.getElementById("hw-own"), rent: document.getElementById("hw-rent") };
-  var fhInputs = { remote: document.getElementById("fh-remote"), local: document.getElementById("fh-local"), self: document.getElementById("fh-self") };
+  var fhInputs = { remote: document.getElementById("fh-remote"), local: document.getElementById("fh-local"), self: document.getElementById("fh-self"), rate: document.getElementById("fh-rate") };
 
   function money(n) {
     var v = Math.round(n * 100) / 100;
