@@ -18,3 +18,11 @@ directly in a browser. Every figure is editable, with a reset-to-defaults button
 - **Storefront** — specialized hardware, new or refurbished, rent-or-own margin.
 - **Three bottom-line totals**, each scaling with N: recurring, one-time (setup), and storefront
   (rent + own), kept separate so nothing is double-counted.
+
+---
+
+## 🌈 Bifrost
+
+This repo runs on **[Bifrost](https://a777ance.github.io/localDNS/bifrost.html)** — the
+A777ance keyboard-spatial command-composition schema, active from the first token of every
+session. The canonical spec lives in the public `localDNS` repo.
